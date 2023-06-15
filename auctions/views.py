@@ -4,16 +4,53 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import User
+from .models import User, Category, Listing
 
 
 def index(request):
-    return render(request, "auctions/index.html")
+    activeListings = Listing.objects.filter(isActive=True)
+    allCategory = Category.objects.all()
+    return render(request, "auctions/index.html", {
+        "listings":activeListings,
+        "categories" : allCategory
+        })
+
+def displayCategory(request):
+    if request.method == "POST":
+        categoryFromForm = request.POST["category"]
+        category = Category.objects.get(categoryName=categoryFromForm)
+        activeListings = Listing.objects.filter(isActive=True, category=category)
+        allCategory = Category.objects.all()
+        return render(request, "auctions/index.html", {
+            "listings":activeListings,
+            "categories" : allCategory
+            })
 
 def createListing(request):
     if request.method=="GET":
-        return render(request, "auctions/create.html")
-    
+        allCategory = Category.objects.all()
+        return render(request, "auctions/create.html", {
+            "categories": allCategory
+            })
+    else:
+        request.method=="POST"
+        title = request.POST["title"]
+        description = request.POST["description"]
+        imageUrl = request.POST["imageurl"]
+        price = request.POST["price"]
+        category = request.POST["category"]
+        currentUser = request.user
+        categoryData= Category.objects.get(categoryName=category)
+        newListing = Listing(
+            title = title,
+            description = description,
+            imageUrl = imageUrl,
+            price = float(price),
+            category= categoryData,
+            owner = currentUser
+            )
+        newListing.save()
+        return HttpResponseRedirect(reverse(index))
 def login_view(request):
     if request.method == "POST":
 
